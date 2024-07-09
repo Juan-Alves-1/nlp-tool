@@ -5,10 +5,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	language "cloud.google.com/go/language/apiv2"
 	"cloud.google.com/go/language/apiv2/languagepb"
 )
+
+func validateURL(rawURL string) string {
+	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
+		rawURL = "https://" + rawURL
+	}
+
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return "Invalid URL format"
+	}
+	validURL := parsedURL.String()
+	return validURL
+}
 
 func fetchContent(url string) string {
 	// Send an HTTP GET request
@@ -28,27 +43,6 @@ func fetchContent(url string) string {
 	return string(bodycontent)
 
 }
-
-/*func validateUrl() (string, err) {
-	// Check if a URL is provided
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <URL>")
-		return
-	}
-
-	// Get the URL from the command-line arguments
-	url := os.Args[1]
-
-	// Fetch the content
-	approvedUrl, err := fetchContent(url)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
-
-	// Store the body content for later use (example: printing it here)
-	return approvedUrl
-}  */
 
 // analyzeEntities sends a string of text to the Cloud Natural Language API to
 // detect the entities of the text.
@@ -79,7 +73,8 @@ func analyzeEntities(html string) error {
 }
 
 func main() {
-	parsedHTML := fetchContent("https://weareher.com/trans-dating")
+	url := validateURL("https://weareher.com/trans-dating/")
+	parsedHTML := fetchContent(url)
 	analyzeEntities(parsedHTML)
 
 }
