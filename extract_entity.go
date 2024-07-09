@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
-	language "cloud.google.com/go/language/apiv2"
-	"cloud.google.com/go/language/apiv2/languagepb"
+	language "cloud.google.com/go/language/apiv1"
+	"cloud.google.com/go/language/apiv1/languagepb"
 )
 
 func validateURL(rawURL string) string {
@@ -48,8 +50,6 @@ func fetchContent(url string) string {
 // detect the entities of the text.
 func analyzeEntities(html string) error {
 	ctx := context.Background()
-
-	// Initialize client.
 	client, err := language.NewClient(ctx)
 	if err != nil {
 		return err
@@ -68,13 +68,23 @@ func analyzeEntities(html string) error {
 	if err != nil {
 		return fmt.Errorf("AnalyzeEntities: %w", err)
 	}
-	fmt.Println(resp)
+
+	sort.Slice(resp.Entities, func(i, j int) bool {
+		return resp.Entities[i].Salience > resp.Entities[j].Salience
+	})
+
+	for _, entity := range resp.Entities {
+		fmt.Printf("Name: %s, Salience: %f\n", entity.Name, entity.Salience)
+	}
+
 	return nil
 }
 
 func main() {
 	url := validateURL("https://weareher.com/trans-dating/")
 	parsedHTML := fetchContent(url)
-	analyzeEntities(parsedHTML)
+	if err := analyzeEntities(parsedHTML); err != nil {
+		log.Fatalf("Failed to analyse entities: %v", err)
+	}
 
 }
