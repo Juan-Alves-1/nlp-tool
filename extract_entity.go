@@ -10,21 +10,21 @@ import (
 	"sort"
 	"strings"
 
-	language "cloud.google.com/go/language/apiv1"
-	"cloud.google.com/go/language/apiv1/languagepb"
+	language "cloud.google.com/go/language/apiv2"
+	"cloud.google.com/go/language/apiv2/languagepb"
 )
 
-func validateURL(rawURL string) string {
+func validateURL(rawURL string) (string, error) {
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
 		rawURL = "https://" + rawURL
 	}
 
 	parsedURL, err := url.Parse(rawURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return "Invalid URL format"
+	if err != nil {
+		return "Invalid URL format", err
 	}
 	validURL := parsedURL.String()
-	return validURL
+	return validURL, nil
 }
 
 func fetchContent(url string) string {
@@ -69,19 +69,47 @@ func analyzeEntities(html string) error {
 		return fmt.Errorf("AnalyzeEntities: %w", err)
 	}
 
-	sort.Slice(resp.Entities, func(i, j int) bool {
-		return resp.Entities[i].Salience > resp.Entities[j].Salience
-	})
+	// Create a map to store the frequency of each entity
+	entityFrequency := make(map[string]int)
 
 	for _, entity := range resp.Entities {
-		fmt.Printf("Name: %s, Salience: %f\n", entity.Name, entity.Salience)
+		entityFrequency[entity.Name] += len(entity.Mentions)
+	}
+
+	// Create a slice to sort entities by frequency
+	type entityInfo struct {
+		Name      string
+		Type      string
+		Frequency int
+	}
+	var entities []entityInfo
+
+	for _, entity := range resp.Entities {
+		entities = append(entities, entityInfo{
+			Name:      entity.Name,
+			Type:      entity.Type.String(),
+			Frequency: entityFrequency[entity.Name],
+		})
+	}
+
+	// Sort the entities by frequency in descending order
+	sort.Slice(entities, func(i, j int) bool {
+		return entities[i].Frequency > entities[j].Frequency
+	})
+
+	// Print the sorted entities
+	for _, entity := range entities {
+		fmt.Printf("Name: %s, Type: %s, Frequency: %d\n", entity.Name, entity.Type, entity.Frequency)
 	}
 
 	return nil
 }
 
 func main() {
-	url := validateURL("https://weareher.com/trans-dating/")
+	url, err := validateURL("https://weareher.com/trans-dating/")
+	if err != nil {
+		log.Fatalf("Invalid URL: %s", err)
+	}
 	parsedHTML := fetchContent(url)
 	if err := analyzeEntities(parsedHTML); err != nil {
 		log.Fatalf("Failed to analyse entities: %v", err)
