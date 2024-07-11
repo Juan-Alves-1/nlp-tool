@@ -12,6 +12,7 @@ import (
 
 	language "cloud.google.com/go/language/apiv2"
 	"cloud.google.com/go/language/apiv2/languagepb"
+	"github.com/PuerkitoBio/goquery"
 )
 
 func validateURL(rawURL string) (string, error) {
@@ -45,6 +46,67 @@ func fetchContent(url string) string {
 	return string(bodycontent)
 
 }
+
+func extractBodyContent(html string) (string, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML: %v", err)
+	}
+
+	bodyHtml, err := doc.Find("body").Html()
+	if err != nil {
+		return "", fmt.Errorf("failed to extract body content: %v", err)
+	}
+
+	return bodyHtml, nil
+}
+
+// not working
+/* func extractContentFromFirstH1(html string) (string, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML: %v", err)
+	}
+
+	// Extract the content of the <body> tag
+	bodySelection := doc.Find("body")
+	if bodySelection.Length() == 0 {
+		return "", fmt.Errorf("no <body> tag found")
+	}
+	bodyContent, err := bodySelection.Html()
+	if err != nil {
+		return "", fmt.Errorf("failed to get <body> content: %v", err)
+	}
+
+	// Parse the body content again to find the first <h1> tag and extract content from there onward
+	bodyDoc, err := goquery.NewDocumentFromReader(strings.NewReader(bodyContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse body content: %v", err)
+	}
+
+	var contentBuilder strings.Builder
+	startAppending := false
+
+	bodyDoc.Find("body").Contents().Each(func(i int, s *goquery.Selection) {
+		if s.Is("h1") {
+			startAppending = true
+		}
+		if startAppending {
+			html, err := s.Html()
+			if err == nil {
+				contentBuilder.WriteString(html)
+			} else {
+				fmt.Printf("Error parsing HTML: %v\n", err)
+			}
+		}
+	})
+
+	content := contentBuilder.String()
+	if content == "" {
+		return "", fmt.Errorf("no content found after the first <h1> tag")
+	}
+	return content, nil
+} */
 
 // analyzeEntities sends a string of text to the Cloud Natural Language API to
 // detect the entities of the text.
@@ -110,8 +172,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid URL: %s", err)
 	}
-	parsedHTML := fetchContent(url)
-	if err := analyzeEntities(parsedHTML); err != nil {
+	htmlContent := fetchContent(url)
+
+	bodyContent, err := extractBodyContent(htmlContent)
+	if err != nil {
+		log.Fatalf("Failed to extract body content: %v", err)
+	}
+
+	if err := analyzeEntities(bodyContent); err != nil {
 		log.Fatalf("Failed to analyse entities: %v", err)
 	}
 
