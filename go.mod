@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	cloud.google.com/go/language v1.12.7
 	github.com/gin-gonic/gin v1.10.0
+	github.com/mauidude/go-readability v0.0.0-20220221173116-a9b3620098b7
 )
 
 require (
