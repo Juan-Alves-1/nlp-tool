@@ -12,8 +12,17 @@ import (
 
 	language "cloud.google.com/go/language/apiv1"
 	"cloud.google.com/go/language/apiv1/languagepb"
-	"github.com/mauidude/go-readability"
 )
+
+type EntityInfo struct {
+	Name        string
+	Type        string
+	Salience    float32
+	HasWiki     bool
+	WikiURL     string
+	MentionedAs string
+	MentionType languagepb.EntityMention_Type
+}
 
 func validateURL(rawURL string) (string, error) {
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
@@ -43,18 +52,18 @@ func fetchContent(url string) (string, error) {
 	}
 
 	// For Gutenberg content format
-	/* fmt.Printf("%s", bodyContent)
-	return string(bodyContent), nil */
+	// fmt.Printf("%s", bodyContent)
+	return string(bodyContent), nil
 
 	// For traditional blog post format
-	doc, err := readability.NewDocument(string(bodyContent))
+	/* doc, err := readability.NewDocument(string(bodyContent))
 	if err != nil {
 		fmt.Println("Error parsing the HTML content:", err)
 		return "", err
 	}
 
 	cleanHTML := doc.Content()
-	return cleanHTML, nil
+	return cleanHTML, nil */
 }
 
 // analyzeEntities sends a string of text to the Cloud Natural Language API to
@@ -80,39 +89,73 @@ func analyzeEntities(html string) error {
 		return fmt.Errorf("AnalyzeEntities: %w", err)
 	}
 
-	/* for _, mention := range entity.Mentions {
-		fmt.Println(mention.Text)
-	} */
+	var entityInfos []EntityInfo
 
-	/* type myEntities struct {
-		Name string
-		Salience float32
-		Wikipedia bool
-		WikiUrl string
-	}*/
+	for _, entity := range resp.Entities {
+		hasWiki := false
+		wikiURL := ""
+		if val, ok := entity.Metadata["wikipedia_url"]; ok {
+			hasWiki = true
+			wikiURL = val
+		}
 
-	// Sort the entities by frequency in descending order
-	sort.Slice(resp.Entities, func(i, j int) bool {
-		return resp.Entities[i].Salience > resp.Entities[j].Salience
-	})
-
-	for _, entity := range resp.Entities[0:11] {
-		fmt.Printf("Entity name: %s ", entity.Name)
-		fmt.Printf("Entity type: %s ", entity.Type)
-		fmt.Printf("Salience: %f ", entity.Salience)
-		fmt.Println("______________________")
-		for key, value := range entity.Metadata {
-			fmt.Println(key)
-			fmt.Println(value)
-			fmt.Println("______________________")
-			// fmt.Printf("Name: %s, Salience: %f\n", entity.Name, entity.Salience)
+		for _, mention := range entity.Mentions {
+			entityInfos = append(entityInfos, EntityInfo{
+				Name:        entity.Name,
+				Type:        entity.Type.String(),
+				Salience:    entity.Salience,
+				HasWiki:     hasWiki,
+				WikiURL:     wikiURL,
+				MentionedAs: mention.Text.Content,
+				MentionType: mention.Type,
+			})
 		}
 	}
+
+	// Sort entityInfos by salience in descending order
+	sort.Slice(entityInfos, func(i, j int) bool {
+		return entityInfos[i].Salience > entityInfos[j].Salience
+	})
+
+	// Print the 20 most prevalent entities
+	fmt.Println("Top 20 Entities by Salience:")
+	uniqueEntities := make(map[string]bool)
+	count := 0
+	for _, entity := range entityInfos {
+		if count >= 20 {
+			break
+		}
+		if !uniqueEntities[entity.Name] {
+			uniqueEntities[entity.Name] = true
+			fmt.Printf("Name: %s, Type: %s, Salience: %.6f, Has Wikipedia URL metadata: %t\n", entity.Name, entity.Type, entity.Salience, entity.HasWiki)
+			count++
+		}
+	}
+
+	// Print entities with mentions of type PROPER
+	fmt.Println("\n_________________________________")
+	fmt.Println("\nEntities with PROPER mentions:")
+	var properEntities []EntityInfo
+	for _, entity := range entityInfos {
+		if entity.MentionType == languagepb.EntityMention_PROPER {
+			properEntities = append(properEntities, entity)
+		}
+	}
+
+	// Sort properEntities by salience in descending order
+	sort.Slice(properEntities, func(i, j int) bool {
+		return properEntities[i].Salience > properEntities[j].Salience
+	})
+
+	for _, entity := range properEntities {
+		fmt.Printf("Name: %s, Text Content: %s, Salience: %6f, Wikipedia URL: %s\n", entity.Name, entity.MentionedAs, entity.Salience, entity.WikiURL)
+	}
+
 	return nil
 }
 
 func main() {
-	url, err := validateURL("https://weareher.com/trans-dating/")
+	url, err := validateURL("https://weareher.com/trans-dating")
 	if err != nil {
 		log.Fatalf("Invalid URL: %s", err)
 	}
