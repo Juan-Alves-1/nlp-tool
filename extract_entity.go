@@ -12,6 +12,7 @@ import (
 
 	language "cloud.google.com/go/language/apiv1"
 	"cloud.google.com/go/language/apiv1/languagepb"
+	"github.com/gocolly/colly"
 )
 
 type EntityInfo struct {
@@ -19,7 +20,7 @@ type EntityInfo struct {
 	Type        string
 	Salience    float32
 	HasWiki     bool
-	WikiURL     string
+	WikiURL     string // via google API
 	MentionedAs string
 	MentionType languagepb.EntityMention_Type
 }
@@ -167,6 +168,34 @@ func main() {
 
 	if err := analyzeEntities(htmlContent); err != nil {
 		log.Fatalf("Failed to analyse entities: %v", err)
+	}
+
+	c := colly.NewCollector()
+
+	var topResultURLs []string
+
+	// Find and visit the first 10 links in the search results
+	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+		href := e.Attr("href")
+		if strings.HasPrefix(href, "/url?q=") && len(topResultURLs) < 10 {
+			url := strings.Split(href, "&")[0][7:] // Remove "/url?q=" and everything after "&"
+			topResultURLs = append(topResultURLs, url)
+		}
+	})
+
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("___________________")
+		fmt.Println("Visiting", r.URL)
+	})
+
+	err = c.Visit("https://www.google.com/search?q=trans+dating&hl=en&gl=us")
+	if err != nil {
+		log.Fatalf("Failed to visit Google search page: %v", err)
+	}
+
+	fmt.Println("Top 10 Google result URLs:")
+	for i, url := range topResultURLs {
+		fmt.Printf("%d: %s\n", i+1, url)
 	}
 
 }
