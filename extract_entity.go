@@ -16,13 +16,12 @@ import (
 )
 
 type EntityInfo struct {
-	Name        string
-	Type        string
-	Salience    float32
-	HasWiki     bool
-	WikiURL     string // via google API
-	MentionedAs string
-	MentionType languagepb.EntityMention_Type
+	Name            string
+	Type            string
+	Salience        float32
+	WikiURLmetadata string // via Cloud Natural Language API
+	WikiURLfromWiki string // via Wikipedia API
+	MentionedAs     string
 }
 
 func validateURL(rawURL string) (string, error) {
@@ -52,11 +51,10 @@ func fetchContent(url string) (string, error) {
 		return "", err
 	}
 
-	// For Gutenberg content format
-	// fmt.Printf("%s", bodyContent)
+	// Most types of web pages, including Gutenberg content format - double-check content with: fmt.Printf("%s", bodyContent)
 	return string(bodyContent), nil
 
-	// For traditional blog post format
+	// For the traditional blog post format
 	/* doc, err := readability.NewDocument(string(bodyContent))
 	if err != nil {
 		fmt.Println("Error parsing the HTML content:", err)
@@ -67,8 +65,22 @@ func fetchContent(url string) (string, error) {
 	return cleanHTML, nil */
 }
 
-// analyzeEntities sends a string of text to the Cloud Natural Language API to
-// detect the entities of the text.
+func checkWikiURLfromWiki(entityName string) string {
+	WikiURLfromWiki := "https://en.wikipedia.org/wiki/" + strings.ReplaceAll(entityName, " ", "_")
+
+	resp, err := http.Get(WikiURLfromWiki)
+	if err != nil {
+		fmt.Printf("Failed to fetch %s", WikiURLfromWiki)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPermanentRedirect {
+		return WikiURLfromWiki
+	}
+	return ""
+}
+
 func analyzeEntities(html string) error {
 	ctx := context.Background()
 	client, err := language.NewClient(ctx)
@@ -93,22 +105,19 @@ func analyzeEntities(html string) error {
 	var entityInfos []EntityInfo
 
 	for _, entity := range resp.Entities {
-		hasWiki := false
-		wikiURL := ""
-		if val, ok := entity.Metadata["wikipedia_url"]; ok {
-			hasWiki = true
-			wikiURL = val
+		WikiURLmetadata := ""
+		if key, ok := entity.Metadata["wikipedia_url"]; ok {
+			WikiURLmetadata = key
 		}
 
 		for _, mention := range entity.Mentions {
 			entityInfos = append(entityInfos, EntityInfo{
-				Name:        entity.Name,
-				Type:        entity.Type.String(),
-				Salience:    entity.Salience,
-				HasWiki:     hasWiki,
-				WikiURL:     wikiURL,
-				MentionedAs: mention.Text.Content,
-				MentionType: mention.Type,
+				Name:            entity.Name,
+				Type:            entity.Type.String(),
+				Salience:        entity.Salience,
+				WikiURLmetadata: WikiURLmetadata,
+				WikiURLfromWiki: "",
+				MentionedAs:     mention.Text.Content,
 			})
 		}
 	}
@@ -118,45 +127,39 @@ func analyzeEntities(html string) error {
 		return entityInfos[i].Salience > entityInfos[j].Salience
 	})
 
-	// Print the 20 most prevalent entities
-	fmt.Println("Top 20 Entities by Salience:")
+	// Delete duplicates
 	uniqueEntities := make(map[string]bool)
 	count := 0
+	topEntities := []EntityInfo{}
 	for _, entity := range entityInfos {
-		if count >= 20 {
+		if count >= 30 {
 			break
 		}
 		if !uniqueEntities[entity.Name] {
 			uniqueEntities[entity.Name] = true
-			fmt.Printf("Name: %s, Type: %s, Salience: %.6f, Has Wikipedia URL metadata: %t\n", entity.Name, entity.Type, entity.Salience, entity.HasWiki)
+			topEntities = append(topEntities, entity)
 			count++
 		}
 	}
 
-	// Print entities with mentions of type PROPER
-	fmt.Println("\n_________________________________")
-	fmt.Println("\nEntities with PROPER mentions:")
-	var properEntities []EntityInfo
-	for _, entity := range entityInfos {
-		if entity.MentionType == languagepb.EntityMention_PROPER {
-			properEntities = append(properEntities, entity)
+	// Check Wikipedia URLs for the top 30 entities
+	for i := 0; i < len(topEntities); i++ {
+		if topEntities[i].WikiURLmetadata == "" {
+			topEntities[i].WikiURLfromWiki = checkWikiURLfromWiki(topEntities[i].Name)
 		}
 	}
 
-	// Sort properEntities by salience in descending order
-	sort.Slice(properEntities, func(i, j int) bool {
-		return properEntities[i].Salience > properEntities[j].Salience
-	})
-
-	for _, entity := range properEntities {
-		fmt.Printf("Name: %s, Text Content: %s, Salience: %6f, Wikipedia URL: %s\n", entity.Name, entity.MentionedAs, entity.Salience, entity.WikiURL)
+	// Print the top 30 entities with Wikipedia URL information
+	for _, entity := range topEntities {
+		fmt.Printf("Name: %s, Type: %s, Salience: %.6f, Has Wikipedia URL metadata: %t, Has Wikipedia URL: %s\n",
+			entity.Name, entity.Type, entity.Salience, entity.WikiURLmetadata != "", entity.WikiURLfromWiki)
 	}
 
 	return nil
 }
 
 func main() {
-	url, err := validateURL("https://weareher.com/trans-dating")
+	url, err := validateURL("https://weareher.com/")
 	if err != nil {
 		log.Fatalf("Invalid URL: %s", err)
 	}
@@ -174,10 +177,10 @@ func main() {
 
 	var topResultURLs []string
 
-	// Find and visit the first 10 links in the search results
+	// Find and visit the first 12 links in the search results
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		href := e.Attr("href")
-		if strings.HasPrefix(href, "/url?q=") && len(topResultURLs) < 10 {
+		if strings.HasPrefix(href, "/url?q=") && len(topResultURLs) < 12 {
 			url := strings.Split(href, "&")[0][7:] // Remove "/url?q=" and everything after "&"
 			topResultURLs = append(topResultURLs, url)
 		}
@@ -188,13 +191,13 @@ func main() {
 		fmt.Println("Visiting", r.URL)
 	})
 
-	err = c.Visit("https://www.google.com/search?q=trans+dating&hl=en&gl=us")
+	err = c.Visit("https://www.google.com/search?q=lesbian+dating&hl=en&gl=us")
 	if err != nil {
 		log.Fatalf("Failed to visit Google search page: %v", err)
 	}
 
 	fmt.Println("Top 10 Google result URLs:")
-	for i, url := range topResultURLs {
+	for i, url := range topResultURLs[2:] {
 		fmt.Printf("%d: %s\n", i+1, url)
 	}
 
