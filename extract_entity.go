@@ -105,7 +105,7 @@ func analyzeEntities(html string) error {
 	var entityInfos []EntityInfo
 
 	for _, entity := range resp.Entities {
-		WikiURLmetadata := ""
+		wikiURLmetadata := ""
 		if key, ok := entity.Metadata["wikipedia_url"]; ok {
 			WikiURLmetadata = key
 		}
