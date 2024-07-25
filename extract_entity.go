@@ -173,12 +173,12 @@ func main() {
 		log.Fatalf("Failed to analyse entities: %v", err)
 	}
 
-	c := colly.NewCollector()
+	collector := colly.NewCollector()
 
 	var topResultURLs []string
 
 	// Find and visit the first 12 links in the search results
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+	collector.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		href := e.Attr("href")
 		if strings.HasPrefix(href, "/url?q=") && len(topResultURLs) < 12 {
 			url := strings.Split(href, "&")[0][7:] // Remove "/url?q=" and everything after "&"
@@ -186,12 +186,12 @@ func main() {
 		}
 	})
 
-	c.OnRequest(func(r *colly.Request) {
+	collector.OnRequest(func(r *colly.Request) {
 		fmt.Println("___________________")
 		fmt.Println("Visiting", r.URL)
 	})
 
-	err = c.Visit("https://www.google.com/search?q=trans+dating&hl=en&gl=us")
+	err = collector.Visit("https://www.google.com/search?q=trans+dating&hl=en&gl=us")
 	if err != nil {
 		log.Fatalf("Failed to visit Google search page: %v", err)
 	}
