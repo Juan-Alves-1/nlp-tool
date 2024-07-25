@@ -66,7 +66,7 @@ func fetchContent(url string) (string, error) {
 }
 
 func checkWikiURLfromWiki(entityName string) string {
-	WikiURLfromWiki := "https://en.wikipedia.org/wiki/" + strings.ReplaceAll(entityName, " ", "_")
+	wikiURLfromWiki := "https://en.wikipedia.org/wiki/" + strings.ReplaceAll(entityName, " ", "_")
 
 	resp, err := http.Get(WikiURLfromWiki)
 	if err != nil {
