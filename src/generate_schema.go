@@ -7,9 +7,17 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file
+	err := godotenv.Load("../.env")
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+		return
+	}
 	url := "https://api.openai.com/v1/chat/completions"
 	apiKey := os.Getenv("OPENAI_API_KEY")
 
@@ -23,7 +31,7 @@ func main() {
 			},
 			{
 				"role":    "user",
-				"content": "Hello!",
+				"content": "generate semantic schema markups for 'transgender', 'dating' and 'online chat' with wikipedia URLs ",
 			},
 		},
 	}
