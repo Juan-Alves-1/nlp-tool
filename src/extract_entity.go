@@ -3,6 +3,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -36,11 +37,11 @@ func checkWikiURLfromWiki(entityName string) string {
 	return ""
 }
 
-func AnalyzeEntities(html string) error {
+func AnalyzeEntities(html string) ([]Entity, error) {
 	ctx := context.Background()
 	client, err := language.NewClient(ctx)
 	if err != nil {
-		return err
+		log.Fatalf("Couldn't create a context.Brackgroound: %s", err)
 	}
 	defer client.Close()
 
@@ -54,7 +55,7 @@ func AnalyzeEntities(html string) error {
 		EncodingType: languagepb.EncodingType_UTF8,
 	})
 	if err != nil {
-		return fmt.Errorf("AnalyzeEntities: %w", err)
+		log.Fatalf("Failed to analyse entities: %v", err)
 	}
 
 	var entityList []Entity
@@ -104,11 +105,5 @@ func AnalyzeEntities(html string) error {
 		}
 	}
 
-	// Print the top 30 entities with Wikipedia URL information
-	for _, entity := range topEntities {
-		fmt.Printf("Name: %s, Salience: %.3f, Type: %s\n",
-			entity.Name, entity.Salience, entity.Type)
-	}
-
-	return nil
+	return topEntities, nil
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	/*// Get top entities for a given URL
+	// Get top entities for a given URL
 	url, err := source.UrlInput()
 	if err != nil {
 		log.Fatalf("Invalid input: %s", err)
@@ -23,40 +23,49 @@ func main() {
 		log.Fatalf("Failed to fetch: %s", err)
 	}
 
-	if err := source.AnalyzeEntities(htmlContent); err != nil {
+	topEntities, err := source.AnalyzeEntities(htmlContent)
+	if err != nil {
 		log.Fatalf("Failed to analyse entities: %s", err)
 	}
 
-	// Get SERP results for a given keyword
-	keyword, err := source.KwInput()
-	if err != nil {
-		log.Fatalf("Invalid keyword: %s", err)
+	for _, entity := range topEntities {
+		fmt.Printf("Name: %s, Salience: %.3f, Type: %s\n",
+			entity.Name, entity.Salience, entity.Type)
 	}
 
-	validKeyword, err := source.ValidateKeyword(keyword)
-	if err != nil {
-		log.Fatalf("Unable to process the target keyword")
+	message := source.ProceedSchema()
+	if message != "Analysing your entities..." {
+		fmt.Println(message)
+		return
 	}
+	fmt.Println(message)
 
-	serpresult, err := source.SerpExtraction(validKeyword)
-	if err != nil {
-		log.Fatalf("Couldn't fetch for %s", keyword)
-	}
-	fmt.Println("Top Google Search results:")
-	for i, url := range serpresult[2:] {
-		fmt.Printf("%d: %s \n", i+1, url)
-	}*/
-
-	entities := []source.Entity{
-		{Name: "trans", WikiURLfromWiki: "https://en.wikipedia.org/wiki/Trans"},
-		{Name: "transgender", WikiURLfromWiki: "https://en.wikipedia.org/wiki/Transgender"},
-		{Name: "cd", WikiURLfromWiki: "https://en.wikipedia.org/wiki/Cross-dressing"},
-	}
-
-	schema, err := source.GenerateSchema(entities)
+	schema, err := source.GenerateSchema(topEntities[:5])
 	if err != nil {
 		log.Fatalf("Wansn't able to generate schema: %s ", err)
 	}
-	fmt.Println(schema)
+	fmt.Println("Generated schema:\n ", schema)
+
+	/*
+		// Get SERP results for a given keyword
+		keyword, err := source.KwInput()
+		if err != nil {
+			log.Fatalf("Invalid keyword: %s", err)
+		}
+
+		validKeyword, err := source.ValidateKeyword(keyword)
+		if err != nil {
+			log.Fatalf("Unable to process the target keyword")
+		}
+
+		serpresult, err := source.SerpExtraction(validKeyword)
+		if err != nil {
+			log.Fatalf("Couldn't fetch for %s", keyword)
+		}
+		fmt.Println("Top Google Search results:")
+		for i, url := range serpresult[2:] {
+			fmt.Printf("%d: %s \n", i+1, url)
+		}
+	*/
 
 }

@@ -11,6 +11,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func ProceedSchema() string {
+	fmt.Println("Would you like to generate schema markups? - 'Yes' or any key to leave")
+	var input string
+	fmt.Scanln(&input)
+	if input == "yes" || input == "y" || input == "Yes" {
+		return "Analysing your entities..."
+	}
+	return "Bye! Have a good one :)"
+}
+
 func GenerateSchema(entities []Entity) (string, error) {
 	// Load .env file
 	err := godotenv.Load("../nlp-tool/.env")
@@ -24,7 +34,7 @@ func GenerateSchema(entities []Entity) (string, error) {
 	// Construct the entities string for the prompt
 	var entitiesSchema string
 	for _, entity := range entities {
-		entitiesSchema += fmt.Sprintf("Entity Name: %s, Wikipedia URL: %s \n", entity.Name, entity.WikiURLfromWiki)
+		entitiesSchema += fmt.Sprintf("Entity Name: %s, Wikipedia URL: %s\n", entity.Name, entity.WikiURLfromWiki)
 	}
 
 	// Define the request payload
@@ -37,7 +47,7 @@ func GenerateSchema(entities []Entity) (string, error) {
 			},
 			{
 				"role":    "user",
-				"content": fmt.Sprintf("Generate semantic schema markup for the following entities with their Wikipedia URLs - %s", entitiesSchema),
+				"content": fmt.Sprintf("Generate semantic schema markup for the following entities with their Wikipedia URLs:\n%s", entitiesSchema),
 			},
 		},
 	}
@@ -75,5 +85,11 @@ func GenerateSchema(entities []Entity) (string, error) {
 		return "", fmt.Errorf("request failed with status: %s, body: %s", resp.Status, string(body))
 	}
 
-	return string(body), nil
+	// Unescape JSON string
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, body, "", "    "); err != nil {
+		return "", fmt.Errorf("error formatting JSON: %w", err)
+	}
+
+	return prettyJSON.String(), nil
 }
