@@ -11,8 +11,28 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type OpenAIResponse struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	Model   string `json:"model"`
+	Choices []struct {
+		Index   int `json:"index"`
+		Message struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+	Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens      int `json:"total_tokens"`
+	} `json:"usage"`
+}
+
 func ProceedSchema() string {
-	fmt.Println("Would you like to generate schema markups? - 'Yes' or any key to leave")
+	fmt.Println("Would you like to generate schema markups?")
+	fmt.Println("Yes to proceed or any key to leave")
 	var input string
 	fmt.Scanln(&input)
 	if input == "yes" || input == "y" || input == "Yes" {
@@ -47,7 +67,7 @@ func GenerateSchema(entities []Entity) (string, error) {
 			},
 			{
 				"role":    "user",
-				"content": fmt.Sprintf("Generate semantic schema markup for the following entities with their Wikipedia URLs:\n%s", entitiesSchema),
+				"content": fmt.Sprintf("Generate semantic schema markup for the following entities with their Wikipedia URLs and only provide the code as an output:\n%s", entitiesSchema),
 			},
 		},
 	}
@@ -85,11 +105,13 @@ func GenerateSchema(entities []Entity) (string, error) {
 		return "", fmt.Errorf("request failed with status: %s, body: %s", resp.Status, string(body))
 	}
 
-	// Unescape JSON string
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, body, "", "    "); err != nil {
-		return "", fmt.Errorf("error formatting JSON: %w", err)
+	var openAIResp OpenAIResponse
+	if err := json.Unmarshal(body, &openAIResp); err != nil {
+		return "", fmt.Errorf("error unmarshalling response: %v", err)
 	}
 
-	return prettyJSON.String(), nil
+	// Extract and format the schema content
+	schemaContent := openAIResp.Choices[0].Message.Content
+
+	return schemaContent, nil
 }

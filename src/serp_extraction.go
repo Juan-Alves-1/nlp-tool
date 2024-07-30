@@ -8,6 +8,17 @@ import (
 	"github.com/gocolly/colly"
 )
 
+func ProceedSerpExtraction() string {
+	fmt.Println("Would you like to see the top SERPs for a given keyword?")
+	fmt.Println("Yes to proceed or any key to leave")
+	var input string
+	fmt.Scanln(&input)
+	if input == "yes" || input == "y" || input == "Yes" {
+		return "Fetching Google Search US..."
+	}
+	return "Bye! Have a good one :)"
+}
+
 func SerpExtraction(keyword string) ([]string, error) {
 	collector := colly.NewCollector()
 
