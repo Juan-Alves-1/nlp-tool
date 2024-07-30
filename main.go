@@ -45,11 +45,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Wansn't able to generate schema: %s ", err)
 	}
+	fmt.Println(" ")
 	fmt.Println("Generated schema:\n", schema)
 
 	serpMessage := source.ProceedSerpExtraction()
-	if serpMessage != "Fetching Google Search US..." {
+	if serpMessage != "Sure!" {
 		fmt.Println(serpMessage)
+		return
 	}
 	fmt.Println(serpMessage)
 
@@ -68,6 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldn't fetch for %s", keyword)
 	}
+	fmt.Println(" ")
 	fmt.Println("Top Google Search results:")
 	for i, url := range serpresult[2:] {
 		fmt.Printf("%d: %s \n", i+1, url)

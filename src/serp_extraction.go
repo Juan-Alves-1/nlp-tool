@@ -9,12 +9,13 @@ import (
 )
 
 func ProceedSerpExtraction() string {
+	fmt.Println(" ")
 	fmt.Println("Would you like to see the top SERPs for a given keyword?")
-	fmt.Println("Yes to proceed or any key to leave")
+	fmt.Println(" Yes to proceed or any key to leave")
 	var input string
 	fmt.Scanln(&input)
 	if input == "yes" || input == "y" || input == "Yes" {
-		return "Fetching Google Search US..."
+		return "Sure!"
 	}
 	return "Bye! Have a good one :)"
 }
@@ -33,22 +34,11 @@ func SerpExtraction(keyword string) ([]string, error) {
 		}
 	})
 
-	collector.OnRequest(func(r *colly.Request) {
-		fmt.Println("___________________")
-		fmt.Println("Visiting", r.URL)
-	})
-
 	cleanPage := "https://www.google.com/search?q=" + keyword + "&hl=en&gl=us"
-
 	err := collector.Visit(cleanPage)
 	if err != nil {
 		log.Fatalf("Failed to visit Google search page: %v", err)
 	}
 
 	return topResultURLs, nil
-
-	/*fmt.Println("Top 10 Google result URLs:")
-	for i, url := range topResultURLs[2:] {
-		fmt.Printf("%d: %s\n", i+1, url)
-	}*/
 }

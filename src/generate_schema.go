@@ -31,8 +31,9 @@ type OpenAIResponse struct {
 }
 
 func ProceedSchema() string {
+	fmt.Println(" ")
 	fmt.Println("Would you like to generate schema markups?")
-	fmt.Println("Yes to proceed or any key to leave")
+	fmt.Println(" Yes to proceed or any key to leave")
 	var input string
 	fmt.Scanln(&input)
 	if input == "yes" || input == "y" || input == "Yes" {

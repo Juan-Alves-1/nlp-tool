@@ -7,7 +7,7 @@ import (
 )
 
 func KwInput() (string, error) {
-	fmt.Println("What's your target keyword?")
+	fmt.Println(" What's your target keyword?")
 
 	// Use bufio.NewReader to read the entire line of input
 	reader := bufio.NewReader(os.Stdin)

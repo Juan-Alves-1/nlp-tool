@@ -5,6 +5,7 @@ import (
 )
 
 func UrlInput() (string, error) {
+	fmt.Println(" ")
 	fmt.Println("What's the page you would like to analyse?")
 	var urlInput string
 	fmt.Scanln(&urlInput)
