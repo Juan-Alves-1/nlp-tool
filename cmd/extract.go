@@ -11,10 +11,17 @@ import (
 var extractCmd = &cobra.Command{
 	Use:   "extract",
 	Short: "Extract top entities from a given URL",
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		url, err := internal.UrlInput()
-		if err != nil {
-			log.Fatalf("Invalid input: %s", err)
+		var url string
+		if len(args) > 0 {
+			url = args[0]
+		} else {
+			var err error
+			url, err = internal.UrlInput()
+			if err != nil {
+				log.Fatalf("Invalid input: %s", err)
+			}
 		}
 
 		validURL, err := internal.ValidateURL(url)
@@ -45,7 +52,7 @@ var extractCmd = &cobra.Command{
 		}
 		fmt.Println(schemaMessage)
 
-		schema, err := internal.GenerateSchema(topEntities[:5])
+		schema, err := internal.GenerateSchema(topEntities[:10])
 		if err != nil {
 			log.Fatalf("Wansn't able to generate schema: %s ", err)
 		}

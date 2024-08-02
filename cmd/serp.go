@@ -11,17 +11,17 @@ import (
 var serpCmd = &cobra.Command{
 	Use:   "serp",
 	Short: "Extract SERP data for a given keyword on Google Search US",
-	Run: func(cm *cobra.Command, arg []string) {
-		serpMessage := internal.ProceedSerpExtraction()
-		if serpMessage != "Sure!" {
-			fmt.Println(serpMessage)
-			return
-		}
-		fmt.Println(serpMessage)
-
-		keyword, err := internal.KwInput()
-		if err != nil {
-			log.Fatalf("Invalid keyword: %s", err)
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(cm *cobra.Command, args []string) {
+		var keyword string
+		if len(args) > 0 {
+			keyword = args[0]
+		} else {
+			var err error
+			keyword, err = internal.KwInput()
+			if err != nil {
+				log.Fatalf("Invalid keyword: %s", err)
+			}
 		}
 
 		validKeyword, err := internal.ValidateKeyword(keyword)

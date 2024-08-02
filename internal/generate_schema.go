@@ -64,11 +64,11 @@ func GenerateSchema(entities []Entity) (string, error) {
 		"messages": []map[string]string{
 			{
 				"role":    "system",
-				"content": "you are an expert web developer and simply share the code",
+				"content": "you are an expert web developer in schema markups. Use this snippet as a reference for requests: <script type='application/ld+json'> {'@context': 'https://schema.org','@type': 'WebPage', 'mentions': [{'@type': 'Organization','name': 'Samsung','sameAs': 'https://en.wikipedia.org/wiki/Samsung'},{'@type': 'Thing','name': 'OLED','sameAs': 'https://en.wikipedia.org/wiki/OLED'},{'@type': 'Thing','name': 'selection','sameAs': 'https://en.wikipedia.org/wiki/Choice'},{'@type': 'Thing','name': 'picture quality','sameAs': 'https://en.wikipedia.org/wiki/Image'},{'@type': 'Thing','name': 'market','sameAs': 'https://en.wikipedia.org/wiki/Market_(economics)'},{'@type': 'Thing','name': 'price','sameAs': 'https://en.wikipedia.org/wiki/Price'},{'@type': 'Thing','name': 'High-end','sameAs': 'https://en.wikipedia.org/wiki/Luxury_goods'}]}</script> ",
 			},
 			{
 				"role":    "user",
-				"content": fmt.Sprintf("Generate semantic schema markup for the following entities with their Wikipedia URLs and only provide the code as an output:\n%s", entitiesSchema),
+				"content": fmt.Sprintf("only provide the code as an output: generate schema markups similar to the your reference and note that, from mentions onwards, match 'name' keys with the following Entity Names as values, and for 'sameAs' keys matche their following Wikipedia URLs values:\n%s", entitiesSchema),
 			},
 		},
 	}
