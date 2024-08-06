@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"nlp-tool/internal"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -20,18 +20,22 @@ var serpCmd = &cobra.Command{
 			var err error
 			keyword, err = internal.KwInput()
 			if err != nil {
-				log.Fatalf("Invalid keyword: %s", err)
+				fmt.Printf("Invalid keyword: %s\n", err)
+				os.Exit(7)
+
 			}
 		}
 
 		validKeyword, err := internal.ValidateKeyword(keyword)
 		if err != nil {
-			log.Fatalf("Unable to process the target keyword")
+			fmt.Println("Unable to process the target keyword")
+			os.Exit(8)
 		}
 
 		serpresult, err := internal.SerpExtraction(validKeyword)
 		if err != nil {
-			log.Fatalf("Couldn't fetch for %s", keyword)
+			fmt.Printf("Couldn't fetch for %s\n", keyword)
+			os.Exit(9)
 		}
 		fmt.Println(" ")
 		fmt.Println("Top Google Search results:")

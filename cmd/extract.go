@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"nlp-tool/internal"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -14,29 +14,33 @@ var extractCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var url string
+		var err error
 		if len(args) > 0 {
 			url = args[0]
 		} else {
-			var err error
 			url, err = internal.UrlInput()
 			if err != nil {
-				log.Fatalf("Invalid input: %s", err)
+				fmt.Printf("Invalid input: %s\n", err)
+				os.Exit(2)
 			}
 		}
 
 		validURL, err := internal.ValidateURL(url)
 		if err != nil {
-			log.Fatalf("Invalid URL: %s", err)
+			fmt.Printf("Invalid URL: %s\n", err)
+			os.Exit(3)
 		}
 
 		htmlContent, err := internal.FetchContent(validURL)
 		if err != nil {
-			log.Fatalf("Failed to fetch: %s", err)
+			fmt.Printf("Failed to fetch: %s\n", err)
+			os.Exit(4)
 		}
 
 		topEntities, err := internal.AnalyzeEntities(htmlContent)
 		if err != nil {
-			log.Fatalf("Failed to analyse entities: %s", err)
+			fmt.Printf("Failed to analyse entities: %s\n", err)
+			os.Exit(5)
 		}
 
 		for _, entity := range topEntities {
@@ -54,10 +58,11 @@ var extractCmd = &cobra.Command{
 
 		schema, err := internal.GenerateSchema(topEntities[:10])
 		if err != nil {
-			log.Fatalf("Wansn't able to generate schema: %s ", err)
+			fmt.Printf("Wansn't able to generate schema: %s ", err)
+			os.Exit(6)
 		}
-		fmt.Println(" ")
-		fmt.Println("Generated schema:\n", schema)
+
+		fmt.Println("\n Generated schema:\n", schema)
 	},
 }
 
