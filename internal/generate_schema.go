@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-
-	"github.com/joho/godotenv"
+	"nlp-tool/config"
 )
 
 type OpenAIResponse struct {
@@ -43,16 +41,11 @@ func ProceedSchema() string {
 }
 
 func GenerateSchema(entities []Entity) (string, error) {
-	// Load .env file
-	err := godotenv.Load("../nlp-tool/.env")
-	if err != nil {
-		fmt.Println("Error loading .env file:", err)
-		return "", fmt.Errorf("error loading .env file: %v", err)
-	}
-	url := "https://api.openai.com/v1/chat/completions"
-	apiKey := os.Getenv("OPENAI_API_KEY")
 
-	// Construct the entities string for the prompt
+	url := "https://api.openai.com/v1/chat/completions"
+	apiKey := config.AppConfig.OpenAIAPIKey
+
+	// Construct the entities as a string for the prompt
 	var entitiesSchema string
 	for _, entity := range entities {
 		entitiesSchema += fmt.Sprintf("Entity Name: %s, Wikipedia URL: %s\n", entity.Name, entity.WikiURLfromWiki)
@@ -64,7 +57,7 @@ func GenerateSchema(entities []Entity) (string, error) {
 		"messages": []map[string]string{
 			{
 				"role":    "system",
-				"content": "you are an expert web developer in schema markups. Use this snippet as a reference for requests: <script type='application/ld+json'> {'@context': 'https://schema.org','@type': 'WebPage', 'mentions': [{'@type': 'Organization','name': 'Samsung','sameAs': 'https://en.wikipedia.org/wiki/Samsung'},{'@type': 'Thing','name': 'OLED','sameAs': 'https://en.wikipedia.org/wiki/OLED'},{'@type': 'Thing','name': 'selection','sameAs': 'https://en.wikipedia.org/wiki/Choice'},{'@type': 'Thing','name': 'picture quality','sameAs': 'https://en.wikipedia.org/wiki/Image'},{'@type': 'Thing','name': 'market','sameAs': 'https://en.wikipedia.org/wiki/Market_(economics)'},{'@type': 'Thing','name': 'price','sameAs': 'https://en.wikipedia.org/wiki/Price'},{'@type': 'Thing','name': 'High-end','sameAs': 'https://en.wikipedia.org/wiki/Luxury_goods'}]}</script> ",
+				"content": "you are an expert web developer with extensive knowledge in schema markups. Use this snippet as a reference for requests: <script type='application/ld+json'> {'@context': 'https://schema.org','@type': 'WebPage', 'mentions': [{'@type': 'Organization','name': 'Samsung','sameAs': 'https://en.wikipedia.org/wiki/Samsung'},{'@type': 'Thing','name': 'OLED','sameAs': 'https://en.wikipedia.org/wiki/OLED'},{'@type': 'Thing','name': 'selection','sameAs': 'https://en.wikipedia.org/wiki/Choice'},{'@type': 'Thing','name': 'picture quality','sameAs': 'https://en.wikipedia.org/wiki/Image'},{'@type': 'Thing','name': 'market','sameAs': 'https://en.wikipedia.org/wiki/Market_(economics)'},{'@type': 'Thing','name': 'price','sameAs': 'https://en.wikipedia.org/wiki/Price'},{'@type': 'Thing','name': 'High-end','sameAs': 'https://en.wikipedia.org/wiki/Luxury_goods'}]}</script> ",
 			},
 			{
 				"role":    "user",
