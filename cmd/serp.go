@@ -44,7 +44,3 @@ var serpCmd = &cobra.Command{
 		}
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(serpCmd)
-}
