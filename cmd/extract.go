@@ -65,7 +65,3 @@ var extractCmd = &cobra.Command{
 		fmt.Println("\n Generated schema:\n", schema)
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(extractCmd)
-}

@@ -11,5 +11,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("You won't able to generate schema markups: %s", err)
 	}
+
 	cmd.Execute()
 }
